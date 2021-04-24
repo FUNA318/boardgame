@@ -48,14 +48,31 @@ config.read('config.ini')
 if(not config.has_section('設定')):
 	section1 = '設定'
 	config.add_section(section1)
-	config.set(section1, 'ゴールまでのマス', '3')
+	config.set(section1, 'ゴールまでのマス', '10')
 	config.set(section1, '初期所持アイテム', 'double')
 	section2 = 'double'
 	config.add_section(section2)
 	config.set(section2, 'dice', '2')
+	config.set(section2, '取得位置(ゴールから数えてのマス数)', '3')
 	path_w = 'config.ini'
 	with open(path_w, 'w') as file:
 		config.write(file)
+
+def CheckDropItem(remain):
+	path = 'dropItemList.txt'
+	with open(path, mode='r') as dropItemText:
+		dropItemList = dropItemText.readlines()
+		dropItem = []
+		for item in dropItemList:
+			config.read('config.ini')
+			dropPos = int(config[item]['取得位置(ゴールから数えてのマス数)'])
+			if(remain == dropPos):
+				dropItem.append(item)
+	return dropItem
+
+def giveItem(name, itemlist):
+	for item in itemlist:
+		name.addItem(item)
 
 def Command(name):
 	cmd = input('コマンドを入力 : ')
@@ -71,6 +88,7 @@ def Command(name):
 			roll_num = random.randrange(1, 7)
 			advance = roll_num * dice_effect
 			print(str(advance) + 'マス進みます！')
+			CheckDropItem(advance)
 			name.deleteItem(item)
 			name.deRemain(advance)
 		else:
@@ -80,9 +98,12 @@ def Command(name):
 		roll_num = random.randint(1, 6)
 		print('サイコロの目は' + str(roll_num) + 'でした。')
 		name.deRemain(roll_num)
+		remains = name.getRemain()
+		CheckDropItem(remains)
 	elif cmd == 'itemcheck':
 		for itemname in name.getItem():
 			print(itemname)
+		Command(name)
 	else:
 		print('そのコマンドは存在しません！')
 		Command(name)
@@ -117,6 +138,10 @@ while goal <= numl:
 		m = name.getRemain()
 		print('残り' + str(m) + 'マスです。')
 		Command(name)
+		itemlist = CheckDropItem(name.getRemain())
+		giveItem(name, itemlist)
+		for itemname in itemlist:
+			print('アイテム' + itemname + 'を手に入れた！')
 		if(name.getRemain() <= 0):
 			print(str(username[n]) + 'がゴールしました！')
 			goal += 1
